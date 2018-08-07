@@ -1,3 +1,5 @@
+package com.transit.kiosk;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.zxing.*;
@@ -18,6 +20,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel.ImageFoundListener {
     private static final int FARE_AMNT = 4;
@@ -25,6 +28,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
     private static final String LOYALTY_20_ACTION_ID = "39297";
     private static final String LOYALTY_5_ACTION_ID = "39050";
     private static final String FARE_ACTION_ID = "39717";
+    private static final String STATION_TO_COMP_ACTION_ID = "39051";
 
     private final WebcamViewerPanel webcamViewerPanel;
     private final Manifest services;
@@ -52,7 +56,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         gbc.fill = GridBagConstraints.BOTH;
 
         webcamViewerPanel = new WebcamViewerPanel(this);
-        webcamViewerPanel.setPreferredSize(new Dimension(200, 200));
+        webcamViewerPanel.setSize(new Dimension(200, 200));
         viewerPanel.add(webcamViewerPanel, BorderLayout.CENTER);
 
         addWindowListener(this);
@@ -106,10 +110,8 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
     }
 
     private void populateUserInfoPanel(User user) throws IOException, OSTAPIService.MissingParameter {
-//        Font f = new JLabel().getFont();
         Font f = new Font("Courier", Font.BOLD, 18);
-        //// bold
-        //label.setFont(f.deriveFont(f.getStyle() | Font.BOLD));
+
         JLabel nameLabel = new JLabel("User Name: " + user.getName());
         nameLabel.setFont(f.deriveFont(f.getStyle() | Font.BOLD));
         JLabel idLabel = new JLabel("User ID: " + user.getId());
@@ -124,6 +126,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         userInfoPanel.add(nameLabel);
         userInfoPanel.add(idLabel);
         userInfoPanel.add(balanceLabel);
+        userInfoPanel.add(new JLabel()); //spacer
         userInfoPanel.add(trans);
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -132,10 +135,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
 
     private Component createTransScrollPane(User user) throws IOException, OSTAPIService.MissingParameter {
         JScrollPane scrollPane = new JScrollPane();
-        JList<String> transList = new JList<>();
-        DefaultListModel<String> model = new DefaultListModel<>();
-        transList.setModel(model);
-        transList.setBorder(BorderFactory.createTitledBorder("Recent Transactions:"));
 
         //get the user's most recent transactions
         HashMap<String, Object> params = new HashMap<>();
@@ -144,6 +143,10 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         params.put("limit", 50);
         JsonObject response = services.ledger.get(params);
 
+        //table stuff//
+        JTable table;
+        Vector<Vector<String>> tableData = new Vector<>();
+
         if (response.get("success").getAsBoolean()) {
             JsonArray trans = response.get("data").getAsJsonObject().get("transactions").getAsJsonArray();
             System.out.println("Transactions: " + trans);
@@ -151,13 +154,15 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
             trans.forEach(jsonElement -> {
                 if(jsonElement.getAsJsonObject().get("status").getAsString().equals("complete")) {
                     Transaction t = new Transaction(jsonElement.getAsJsonObject(), services);
-                    model.addElement(t.toString());
+                    tableData.add(t.toRowVector());
                 }
             });
-
         }
 
-        scrollPane.setViewportView(transList);
+        table = new JTable(tableData, Transaction.COL_NAMES);
+
+        scrollPane.setViewportView(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Recent Transactions:"));
 
         return scrollPane;
     }
@@ -165,10 +170,10 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
     //https://api.qrserver.com/v1/create-qr-code/?data=20e161b7-d166-4ed4-b117-41003dd70279&;size=200x200
     private void farePaid(User user) throws IOException, OSTAPIService.MissingParameter {
         String path = "https://api.qrserver.com/v1/create-qr-code/?data=" + user.getId() + "&;size=200x200";
-        System.out.println("Get Image from " + path);
+//        System.out.println("Get Image from " + path);
         URL url = new URL(path);
         BufferedImage image = ImageIO.read(url);
-        System.out.println("Load image into frame...");
+//        System.out.println("Load image into frame...");
         JLabel label = new JLabel(new ImageIcon(image)) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -200,6 +205,17 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
             if (response.get("success").getAsBoolean()) {
                 //fare successfully paid
                 farePaid(user);
+
+                //send the tokens from the station back to the company
+
+                params.put("from_user_id", Main.selectedStationId);
+                params.put("to_user_id", Main.COMP_ID);
+                params.put("action_id", STATION_TO_COMP_ACTION_ID);
+                response = services.transactions.execute(params);
+
+                if(!response.get("success").getAsBoolean()) {
+                    JOptionPane.showMessageDialog(this, "Sorry, there was a problem executing the transactions. Please see your transaction log on our webstie www.TransitToken.org", "com.transit.kiosk.Transaction ERROR", JOptionPane.WARNING_MESSAGE);
+                }
             }
 
             int tokensEarned = user.addNewRide();
@@ -212,7 +228,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
                 params.put("to_user_id", user.getId());
                 response = services.transactions.execute(params);
 
-                if (tokensEarned == 5) {
+                if (tokensEarned == 6) {
                     //send both 20 rides reward and 5 consecutive days reward
                     params.put("action_id", LOYALTY_20_ACTION_ID);
                     services.transactions.execute(params);
@@ -220,14 +236,22 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
                     params.put("action_id", LOYALTY_5_ACTION_ID);
                     response = services.transactions.execute(params);
 
+                    //show popup
+                    showAlert("Thank you for your loyalty! For your 20th ride AND riding 5 consecutive days, here's a Token of our appreciation!\n\n+6 TTO");
                 } else if (tokensEarned == 4) {
                     //send 20 rides reward
                     params.put("action_id", LOYALTY_20_ACTION_ID);
                     response = services.transactions.execute(params);
-                } else if (tokensEarned == 1) {
+
+                    //show popup
+                    showAlert("Thank you for your loyalty! For your 20th ride, here's a Token of our appreciation!\n\n+4 TTO");
+                } else if (tokensEarned == 2) {
                     //send 5 consecutive days reward
                     params.put("action_id", LOYALTY_5_ACTION_ID);
                     response = services.transactions.execute(params);
+
+                    //show popup
+                    showAlert("Thank you for your loyalty! For riding 5 consecutive days, here's a Token of our appreciation!\n\n+2 TTO");
                 } else {
                     //somehow got an incorrect amount, do nothing
                 }
@@ -236,7 +260,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
 
             if (!response.get("success").getAsBoolean()) {
                 //if the transaction failed, alert the user
-                JOptionPane.showMessageDialog(this, "Sorry, there was a problem executing the transactions. Please see your transaction log on our webstie www.TransitToken.org", "Transaction ERROR", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Sorry, there was a problem executing the transactions. Please see your transaction log on our webstie www.TransitToken.org", "com.transit.kiosk.Transaction ERROR", JOptionPane.WARNING_MESSAGE);
             }
 
         } else { //display message to user notifying them their balance is too low
@@ -266,6 +290,15 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         setSize(new Dimension(500, 500));
     }
 
+    private void showAlert(String alertMsg) {
+        JOptionPane pane = new JOptionPane(alertMsg, JOptionPane.INFORMATION_MESSAGE);
+        JDialog dialog = pane.createDialog(this, "!");
+        dialog.setModal(false);
+        dialog.setVisible(true);
+
+        new Timer(3000, e -> dialog.setVisible(false)).start();
+    }
+
     @Override
     public void imageFound(Image image) {
         try {
@@ -281,6 +314,8 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
                 JsonObject response = (services.users.get(params));
 
                 if (response.get("success").getAsBoolean()) {
+                    java.awt.Toolkit.getDefaultToolkit().beep(); //Beep!
+
                     User user;
                     if (userMap.containsKey(result)) { //result, if the OST services api call is a success, equates to the user's ID
                         user = userMap.get(result);

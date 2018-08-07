@@ -1,3 +1,5 @@
+package com.transit.kiosk;
+
 import com.ost.OSTSDK;
 import com.ost.services.v1_1.Manifest;
 

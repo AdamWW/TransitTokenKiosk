@@ -1,3 +1,5 @@
+package com.transit.kiosk;
+
 import com.google.gson.JsonObject;
 
 import java.io.Serializable;
@@ -63,7 +65,7 @@ public class User implements Serializable {
 
         if (consecutiveDaysOfRides == 5) {
             //award the user 1 TTO for 5 consecutive days of riding, then zero it out
-            tokensEarned += 1;
+            tokensEarned += 2;
             consecutiveDaysOfRides = 0;
         }
 

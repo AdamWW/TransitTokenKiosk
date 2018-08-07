@@ -1,3 +1,5 @@
+package com.transit.kiosk;
+
 import com.github.sarxos.webcam.*;
 
 import javax.swing.*;

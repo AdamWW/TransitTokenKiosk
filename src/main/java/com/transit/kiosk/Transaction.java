@@ -1,3 +1,5 @@
+package com.transit.kiosk;
+
 import com.google.gson.JsonObject;
 import com.ost.services.OSTAPIService;
 import com.ost.services.v1_1.Manifest;
@@ -5,14 +7,13 @@ import com.ost.services.v1_1.Manifest;
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Transaction implements Serializable {
 
     private static final long serialVersionUID = 5288849340823875094L;
-    private static final SimpleDateFormat FORMAT = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+    private static final SimpleDateFormat FORMAT = new SimpleDateFormat("EEE, d MMM yy HH:mm");
+    public static final Vector<String> COL_NAMES = new Vector<>(Arrays.asList("Date", "Trans Type", "From", "To", "Amount"));
     private final String id;
     private final String fromId;
     private final String toId;
@@ -56,6 +57,18 @@ public class Transaction implements Serializable {
         } catch (IOException | OSTAPIService.MissingParameter e) {
             throw new RuntimeException("Exception attempting to retrieve user data.", e);
         }
+    }
+
+    public Vector<String> toRowVector() {
+        Vector<String> row = new Vector<>();
+
+        row.add(FORMAT.format(new Date(timestampMillis)));
+        row.add(transType);
+        row.add(fromName);
+        row.add(toName);
+        row.add(amount);
+
+        return row;
     }
 
     @Override
