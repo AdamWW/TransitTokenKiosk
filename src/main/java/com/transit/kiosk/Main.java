@@ -73,9 +73,5 @@ public class Main {
         // Initialize SDK object
         ostObj = new OSTSDK(sdkConfig);
         services = (Manifest) ostObj.services;
-
-//        JsonObject response = (services.users.list(new HashMap<>()));
-//
-//        System.out.println(ReflectionToStringBuilder.toString(response));
     }
 }

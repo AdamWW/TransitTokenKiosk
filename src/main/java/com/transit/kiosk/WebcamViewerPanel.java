@@ -50,7 +50,6 @@ public class WebcamViewerPanel extends JPanel implements Runnable, WebcamListene
         panel = new WebcamPanel(webcam, false);
         panel.setFPSDisplayed(false);
 
-//        add(picker, BorderLayout.NORTH);
         add(panel, BorderLayout.CENTER);
 
         Thread t = new Thread(() -> panel.start());
@@ -116,18 +115,10 @@ public class WebcamViewerPanel extends JPanel implements Runnable, WebcamListene
 
     //WebcamDiscoveryListener methods:
     @Override
-    public void webcamFound(WebcamDiscoveryEvent event) {
-//        if (picker != null) {
-//            picker.addItem(event.getWebcam());
-//        }
-    }
+    public void webcamFound(WebcamDiscoveryEvent event) {}
 
     @Override
-    public void webcamGone(WebcamDiscoveryEvent event) {
-//        if (picker != null) {
-//            picker.removeItem(event.getWebcam());
-//        }
-    }
+    public void webcamGone(WebcamDiscoveryEvent event) {}
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {

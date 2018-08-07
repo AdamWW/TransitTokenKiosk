@@ -68,8 +68,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         pack();
         setLocationRelativeTo(null);
         setSize(new Dimension(500, 500));
-//        setPreferredSize(new Dimension(500, 500));
-//        setResizable(false);
         setVisible(true);
 
     }
@@ -167,13 +165,10 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
         return scrollPane;
     }
 
-    //https://api.qrserver.com/v1/create-qr-code/?data=20e161b7-d166-4ed4-b117-41003dd70279&;size=200x200
     private void farePaid(User user) throws IOException, OSTAPIService.MissingParameter {
         String path = "https://api.qrserver.com/v1/create-qr-code/?data=" + user.getId() + "&;size=200x200";
-//        System.out.println("Get Image from " + path);
         URL url = new URL(path);
         BufferedImage image = ImageIO.read(url);
-//        System.out.println("Load image into frame...");
         JLabel label = new JLabel(new ImageIcon(image)) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -255,7 +250,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
                 } else {
                     //somehow got an incorrect amount, do nothing
                 }
-
             }
 
             if (!response.get("success").getAsBoolean()) {
@@ -403,7 +397,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
             } catch (ClassNotFoundException | IOException e) {
                 throw new RuntimeException("Exception when attempting to de-serialize user data.", e);
             }
-            System.out.println("Deserialized HashMap..");
         }
 
     }
