@@ -122,7 +122,7 @@ public class Transaction implements Serializable {
 
         if (actionId == 39594) {
             type = "First Ride Free";
-        } else if (toName.contains("Station")) {
+        } else if (toName.contains("Station") || actionId == 39997) {
             type = "Subway Fare";
         } else if (actionId == 39596 || actionId == 39595 || actionId == 39717) {
             type = "Customer Transfer";

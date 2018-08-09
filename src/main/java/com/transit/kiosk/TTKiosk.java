@@ -27,7 +27,7 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
     private static final String USER_DATA_SERIALIZED_FILE_NAME = "TTO_USER_DATA.ser";
     private static final String LOYALTY_20_ACTION_ID = "39297";
     private static final String LOYALTY_5_ACTION_ID = "39050";
-    private static final String FARE_ACTION_ID = "39717";
+    private static final String FARE_ACTION_ID = "39997";
     private static final String STATION_TO_COMP_ACTION_ID = "39051";
 
     private final WebcamViewerPanel webcamViewerPanel;
@@ -40,6 +40,8 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
 
 
     public TTKiosk(Manifest services) throws HeadlessException, IOException {
+        ImageIcon icon = new ImageIcon(Main.class.getResource("/images/tt_icon.jpg"));
+        setIconImage(icon.getImage());
         //try to deserialize first...
         deserializeUserData();
 
@@ -147,7 +149,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
 
         if (response.get("success").getAsBoolean()) {
             JsonArray trans = response.get("data").getAsJsonObject().get("transactions").getAsJsonArray();
-            System.out.println("Transactions: " + trans);
 
             trans.forEach(jsonElement -> {
                 if(jsonElement.getAsJsonObject().get("status").getAsString().equals("complete")) {
@@ -300,7 +301,6 @@ public class TTKiosk extends JFrame implements WindowListener, WebcamViewerPanel
             String result = decodeQRCode(image);
 
             if (result != null) {
-                System.out.println("Decoded code: " + result);
                 //we found a code - determine if it's a valid user id
                 Map<String, Object> params = new HashMap<>();
                 params.put("id", result);
